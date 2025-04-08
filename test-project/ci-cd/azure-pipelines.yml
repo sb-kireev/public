@@ -1,0 +1,33 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  imageName: 'your-dockerhub-username/app'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9'
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r app/requirements.txt
+  displayName: 'Install dependencies'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'dockerhub'
+    repository: '$(imageName)'
+    command: 'buildAndPush'
+    Dockerfile: 'app/Dockerfile'
+
+- task: Kubernetes@1
+  inputs:
+    connectionType: 'Kubernetes Service Connection'
+    kubernetesServiceEndpoint: 'your-k8s-cluster'
+    namespace: 'default'
+    command: 'apply'
+    arguments: '-f k8s/'
